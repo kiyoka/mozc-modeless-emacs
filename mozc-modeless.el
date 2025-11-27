@@ -209,11 +209,16 @@ Key bindings:
       (progn
         ;; Enable mode
         (unless (fboundp 'mozc-mode)
-          (error "Mozc is not available. Please install mozc.el"))
-        (message "mozc-modeless-mode enabled. Press C-j to convert romaji."))
+          (error "Mozc is not available. Please install mozc.el")))
     ;; Disable mode
     (when mozc-modeless--active
       (mozc-modeless--finish))))
+
+;;;###autoload
+(define-globalized-minor-mode global-mozc-modeless-mode
+  mozc-modeless-mode
+  (lambda () (mozc-modeless-mode 1))
+  :group 'mozc-modeless)
 
 (provide 'mozc-modeless)
 ;;; mozc-modeless.el ends here
