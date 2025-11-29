@@ -68,6 +68,12 @@ This is used to restore the text when conversion is cancelled.")
 (defvar mozc-modeless--skip-check-count 0
   "Number of post-command-hook calls to skip before checking finish.")
 
+(defvar mozc-modeless--converting-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-g") 'mozc-modeless-cancel)
+    map)
+  "Keymap active only during conversion.")
+
 ;;; Utility functions
 
 (defun mozc-modeless--get-preceding-roman ()
@@ -125,6 +131,9 @@ is sent to mozc, and the slash is deleted."
               (activate-input-method "japanese-mozc"))
             ;; Set up hook to detect conversion completion
             (add-hook 'post-command-hook #'mozc-modeless--check-finish nil t)
+            ;; Activate transient keymap for C-g during conversion
+            (set-transient-map mozc-modeless--converting-map
+                               (lambda () mozc-modeless--active))
             ;; Insert the romaji string through mozc, followed by space to convert
             (mozc-modeless--insert-string (concat roman-string " "))))))))
 
@@ -167,9 +176,7 @@ This is called from `post-command-hook'."
 (defun mozc-modeless-cancel ()
   "Cancel the current conversion and restore the original romaji string."
   (interactive)
-  (if (not mozc-modeless--active)
-      ;; Not in conversion mode, pass through to default C-g behavior
-      (keyboard-quit)
+  (when mozc-modeless--active
     ;; Cancel mozc conversion by deactivating input method
     (when (string= current-input-method "japanese-mozc")
       (deactivate-input-method))
@@ -208,7 +215,6 @@ Use this if the mode gets stuck in an inconsistent state."
 (defvar mozc-modeless-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-j") 'mozc-modeless-convert)
-    (define-key map (kbd "C-g") 'mozc-modeless-cancel)
     map)
   "Keymap for `mozc-modeless-mode'.")
 
