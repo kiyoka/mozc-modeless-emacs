@@ -26,7 +26,7 @@
 ;;
 ;; Usage:
 ;;   (require 'mozc-modeless)
-;;   (mozc-modeless-mode 1)
+;;   (global-mozc-modeless-mode 1)
 ;;
 ;; By default, you type in alphanumeric mode. When you want to convert
 ;; the preceding romaji to Japanese, press C-j. This will activate Mozc
