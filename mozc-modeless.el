@@ -212,28 +212,28 @@ Use this if the mode gets stuck in an inconsistent state."
 
 (defvar mozc-modeless-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-j") 'mozc-modeless-convert)
+    (define-key map mozc-modeless-convert-key 'mozc-modeless-convert)
     map)
   "Keymap for `mozc-modeless-mode'.")
 
 (defvar mozc-modeless--original-mozc-keymap-entry nil
-  "Original C-j binding in mozc-mode-map, saved for restoration.")
+  "Original binding in mozc-mode-map for `mozc-modeless-convert-key', saved for restoration.")
 
 (defun mozc-modeless--setup-mozc-keymap ()
-  "Set up C-j binding in mozc-mode-map for next candidate selection."
+  "Set up binding in mozc-mode-map for next candidate selection."
   (when (boundp 'mozc-mode-map)
     ;; Save original binding
     (setq mozc-modeless--original-mozc-keymap-entry
-          (lookup-key mozc-mode-map (kbd "C-j")))
+          (lookup-key mozc-mode-map mozc-modeless-convert-key))
     ;; Set our binding
-    (define-key mozc-mode-map (kbd "C-j") 'mozc-modeless-convert)))
+    (define-key mozc-mode-map mozc-modeless-convert-key 'mozc-modeless-convert)))
 
 (defun mozc-modeless--restore-mozc-keymap ()
-  "Restore original C-j binding in mozc-mode-map."
+  "Restore original binding for `mozc-modeless-convert-key' in mozc-mode-map."
   (when (boundp 'mozc-mode-map)
     (if mozc-modeless--original-mozc-keymap-entry
-        (define-key mozc-mode-map (kbd "C-j") mozc-modeless--original-mozc-keymap-entry)
-      (define-key mozc-mode-map (kbd "C-j") nil))))
+        (define-key mozc-mode-map mozc-modeless-convert-key mozc-modeless--original-mozc-keymap-entry)
+      (define-key mozc-mode-map mozc-modeless-convert-key nil))))
 
 ;;;###autoload
 (define-minor-mode mozc-modeless-mode
@@ -253,7 +253,7 @@ Key bindings:
         ;; Enable mode
         (unless (fboundp 'mozc-mode)
           (error "Mozc is not available. Please install mozc.el"))
-        ;; Set up C-j in mozc-mode-map
+        ;; Set up convert key in mozc-mode-map
         (mozc-modeless--setup-mozc-keymap))
     ;; Disable mode
     (mozc-modeless--restore-mozc-keymap)
