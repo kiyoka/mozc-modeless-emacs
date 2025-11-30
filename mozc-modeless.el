@@ -97,6 +97,12 @@ position of the romaji string, or nil if no romaji is found."
         mozc-modeless--skip-check-count 0)
   (remove-hook 'post-command-hook #'mozc-modeless--check-finish t))
 
+(defun mozc-modeless--deactivate-ime ()
+  "Deactivate mozc input method if it's currently active."
+  (when (and current-input-method
+             (string= current-input-method "japanese-mozc"))
+    (deactivate-input-method)))
+
 (defun mozc-modeless-convert ()
   "Convert the preceding romaji string to Japanese using Mozc.
 This function is bound to `mozc-modeless-convert-key' (default: C-j).
@@ -171,8 +177,7 @@ This is called from `post-command-hook'."
   "Finish conversion mode and return to normal mode."
   (when mozc-modeless--active
     ;; Deactivate mozc input method
-    (when (string= current-input-method "japanese-mozc")
-      (deactivate-input-method))
+    (mozc-modeless--deactivate-ime)
     ;; Clean up state
     (mozc-modeless--reset-state)))
 
@@ -181,8 +186,7 @@ This is called from `post-command-hook'."
   (interactive)
   (when mozc-modeless--active
     ;; Cancel mozc conversion by deactivating input method
-    (when (string= current-input-method "japanese-mozc")
-      (deactivate-input-method))
+    (mozc-modeless--deactivate-ime)
     ;; Delete any preedit text that mozc may have inserted
     (when (bound-and-true-p mozc-preedit-overlay)
       (delete-overlay mozc-preedit-overlay))
@@ -200,8 +204,7 @@ This is called from `post-command-hook'."
   "Reset mozc-modeless state.
 Use this if the mode gets stuck in an inconsistent state."
   (interactive)
-  (when (string= current-input-method "japanese-mozc")
-    (deactivate-input-method))
+  (mozc-modeless--deactivate-ime)
   (mozc-modeless--reset-state)
   (message "mozc-modeless state reset"))
 
