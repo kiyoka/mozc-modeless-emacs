@@ -2,10 +2,10 @@
 
 ;; Copyright (C) 2025
 
-;; Author:
+;; Author: Kiyoka Nishiyama
 ;; Keywords: i18n, extentions
-;; Version: 0.1.0
-;; Package-Requires: ((emacs "24.4") (mozc "0"))
+;; Version: 0.3.0
+;; Package-Requires: ((emacs "29.0") (mozc "0"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 ;;
 ;; Usage:
 ;;   (require 'mozc-modeless)
-;;   (mozc-modeless-mode 1)
+;;   (global-mozc-modeless-mode 1)
 ;;
 ;; By default, you type in alphanumeric mode. When you want to convert
 ;; the preceding romaji to Japanese, press C-j. This will activate Mozc
@@ -88,6 +88,20 @@ position of the romaji string, or nil if no romaji is found."
         (cons (point) (buffer-substring-no-properties (point) end))))))
 
 ;;; Main functions
+
+(defun mozc-modeless--reset-state ()
+  "Reset all internal state variables and remove hooks."
+  (setq mozc-modeless--active nil
+        mozc-modeless--start-pos nil
+        mozc-modeless--original-string nil
+        mozc-modeless--skip-check-count 0)
+  (remove-hook 'post-command-hook #'mozc-modeless--check-finish t))
+
+(defun mozc-modeless--deactivate-ime ()
+  "Deactivate mozc input method if it's currently active."
+  (when (and current-input-method
+             (string= current-input-method "japanese-mozc"))
+    (deactivate-input-method)))
 
 (defun mozc-modeless-convert ()
   "Convert the preceding romaji string to Japanese using Mozc.
@@ -163,23 +177,16 @@ This is called from `post-command-hook'."
   "Finish conversion mode and return to normal mode."
   (when mozc-modeless--active
     ;; Deactivate mozc input method
-    (when (string= current-input-method "japanese-mozc")
-      (deactivate-input-method))
+    (mozc-modeless--deactivate-ime)
     ;; Clean up state
-    (setq mozc-modeless--active nil
-          mozc-modeless--start-pos nil
-          mozc-modeless--original-string nil
-          mozc-modeless--skip-check-count 0)
-    ;; Remove hooks
-    (remove-hook 'post-command-hook #'mozc-modeless--check-finish t)))
+    (mozc-modeless--reset-state)))
 
 (defun mozc-modeless-cancel ()
   "Cancel the current conversion and restore the original romaji string."
   (interactive)
   (when mozc-modeless--active
     ;; Cancel mozc conversion by deactivating input method
-    (when (string= current-input-method "japanese-mozc")
-      (deactivate-input-method))
+    (mozc-modeless--deactivate-ime)
     ;; Delete any preedit text that mozc may have inserted
     (when (bound-and-true-p mozc-preedit-overlay)
       (delete-overlay mozc-preedit-overlay))
@@ -191,51 +198,42 @@ This is called from `post-command-hook'."
       (goto-char mozc-modeless--start-pos)
       (insert mozc-modeless--original-string))
     ;; Clean up state
-    (setq mozc-modeless--active nil
-          mozc-modeless--start-pos nil
-          mozc-modeless--original-string nil
-          mozc-modeless--skip-check-count 0)
-    (remove-hook 'post-command-hook #'mozc-modeless--check-finish t)))
+    (mozc-modeless--reset-state)))
 
 (defun mozc-modeless-reset ()
   "Reset mozc-modeless state.
 Use this if the mode gets stuck in an inconsistent state."
   (interactive)
-  (when (string= current-input-method "japanese-mozc")
-    (deactivate-input-method))
-  (setq mozc-modeless--active nil
-        mozc-modeless--start-pos nil
-        mozc-modeless--original-string nil
-        mozc-modeless--skip-check-count 0)
-  (remove-hook 'post-command-hook #'mozc-modeless--check-finish t)
+  (mozc-modeless--deactivate-ime)
+  (mozc-modeless--reset-state)
   (message "mozc-modeless state reset"))
 
 ;;; Minor mode definition
 
 (defvar mozc-modeless-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-j") 'mozc-modeless-convert)
+    (define-key map mozc-modeless-convert-key 'mozc-modeless-convert)
     map)
   "Keymap for `mozc-modeless-mode'.")
 
 (defvar mozc-modeless--original-mozc-keymap-entry nil
-  "Original C-j binding in mozc-mode-map, saved for restoration.")
+  "Original binding in mozc-mode-map for `mozc-modeless-convert-key', saved for restoration.")
 
 (defun mozc-modeless--setup-mozc-keymap ()
-  "Set up C-j binding in mozc-mode-map for next candidate selection."
+  "Set up binding in mozc-mode-map for next candidate selection."
   (when (boundp 'mozc-mode-map)
     ;; Save original binding
     (setq mozc-modeless--original-mozc-keymap-entry
-          (lookup-key mozc-mode-map (kbd "C-j")))
+          (lookup-key mozc-mode-map mozc-modeless-convert-key))
     ;; Set our binding
-    (define-key mozc-mode-map (kbd "C-j") 'mozc-modeless-convert)))
+    (define-key mozc-mode-map mozc-modeless-convert-key 'mozc-modeless-convert)))
 
 (defun mozc-modeless--restore-mozc-keymap ()
-  "Restore original C-j binding in mozc-mode-map."
+  "Restore original binding for `mozc-modeless-convert-key' in mozc-mode-map."
   (when (boundp 'mozc-mode-map)
     (if mozc-modeless--original-mozc-keymap-entry
-        (define-key mozc-mode-map (kbd "C-j") mozc-modeless--original-mozc-keymap-entry)
-      (define-key mozc-mode-map (kbd "C-j") nil))))
+        (define-key mozc-mode-map mozc-modeless-convert-key mozc-modeless--original-mozc-keymap-entry)
+      (define-key mozc-mode-map mozc-modeless-convert-key nil))))
 
 ;;;###autoload
 (define-minor-mode mozc-modeless-mode
@@ -255,7 +253,7 @@ Key bindings:
         ;; Enable mode
         (unless (fboundp 'mozc-mode)
           (error "Mozc is not available. Please install mozc.el"))
-        ;; Set up C-j in mozc-mode-map
+        ;; Set up convert key in mozc-mode-map
         (mozc-modeless--setup-mozc-keymap))
     ;; Disable mode
     (mozc-modeless--restore-mozc-keymap)
