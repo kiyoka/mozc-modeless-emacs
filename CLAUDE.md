@@ -328,3 +328,52 @@ markdown-modeで使用時、markdownの構文記号（リスト記号、見出�
 **参考資料:**
 - [markdown-mode公式ドキュメント](https://jblevins.org/projects/markdown-mode/)
 - [markdown-mode GitHub リポジトリ](https://github.com/jrblevin/markdown-mode)
+
+### GitHub Issue #6 対応: インデントの維持
+
+#### 問題の概要
+
+Ctrl-Jで変換を開始すると、行頭のインデント（空白やタブ文字）も変換対象に含まれてしまい、インデント構造が崩れる問題がありました。
+
+**具体例:**
+```
+入力: "    konnnichiwa" + C-j  (行頭に4つの空白)
+問題: 空白も変換対象に含まれる可能性
+期待する結果: "    こんにちは"  (インデントは保持)
+```
+
+#### 実装内容 (2025-12-03)
+
+`mozc-modeless--get-preceding-roman` 関数を修正して、行頭のインデント（空白・タブ文字）を変換対象から除外するようにしました。
+
+**主な変更点:**
+
+1. **行頭インデントのスキップ**
+   - `skip-chars-forward " \t"` を使って行頭の空白・タブをスキップ
+   - スキップ後の位置から変換対象の検索を開始
+
+2. **処理順序の調整**
+   - まず行頭のインデントをスキップ
+   - その後、markdown-modeの構文チェック（issue #5の機能）を実行
+   - これにより、インデント付きのmarkdown構文も正しく処理される
+
+3. **すべてのモードで有効**
+   - この機能はmarkdown-mode専用ではなく、すべてのモードで動作
+   - プログラムコードの編集時にも有用
+
+**修正ファイル:**
+- `mozc-modeless.el:79-111` - `mozc-modeless--get-preceding-roman` 関数
+
+**動作例:**
+```
+入力: "    konnnichiwa" + C-j
+結果: "    こんにちは"  (インデント保持)
+
+入力: "        - aitemu" + C-j  (markdown-modeでインデント付きリスト)
+結果: "        - アイテム"  (インデントとリスト記号の両方を保持)
+```
+
+**技術詳細:**
+- 行頭から `skip-chars-forward " \t"` でインデント部分をスキップ
+- `search-start` をインデント後の位置に設定
+- markdown構文チェックは `search-start` から開始するため、インデント後の構文を正しく認識
