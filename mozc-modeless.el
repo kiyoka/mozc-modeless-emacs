@@ -80,23 +80,29 @@ This is used to restore the text when conversion is cancelled.")
   "Get the preceding romaji string before the cursor.
 Returns a cons cell (START . STRING) where START is the beginning
 position of the romaji string, or nil if no romaji is found.
-In markdown-mode, markdown syntax (list markers, headings) at the
-beginning of the line are excluded from the conversion target."
+Leading indentation (spaces and tabs) at the beginning of the line
+are excluded from the conversion target.
+In markdown-mode, markdown syntax (list markers, headings) are also
+excluded from the conversion target."
   (save-excursion
     (let* ((end (point))
            (line-start (line-beginning-position))
            (search-start line-start))
+      ;; Skip leading indentation (spaces and tabs)
+      (goto-char line-start)
+      (skip-chars-forward " \t")
+      (setq search-start (point))
       ;; In markdown-mode, skip markdown syntax at the beginning of the line
       (when (and (derived-mode-p 'markdown-mode)
                  (boundp 'markdown-regex-list))
         (save-excursion
-          (goto-char line-start)
+          (goto-char search-start)
           ;; Check for list markers (-, *, +, 1., etc.)
           (when (looking-at markdown-regex-list)
             (setq search-start (match-end 0)))
           ;; Check for ATX headings (#, ##, etc.)
-          (goto-char line-start)
-          (when (looking-at "^[ \t]*\\(#+\\)[ \t]+")
+          (goto-char search-start)
+          (when (looking-at "^\\(#+\\)[ \t]+")
             (setq search-start (max search-start (match-end 0))))))
       ;; Skip backward over characters defined in mozc-modeless-skip-chars
       (goto-char end)
