@@ -4,7 +4,7 @@
 
 ;; Author: Kiyoka Nishiyama
 ;; Keywords: i18n, extentions
-;; Version: 0.3.0
+;; Version: 0.4.0
 ;; Package-Requires: ((emacs "29.0") (mozc "0") (markdown-mode "2.0"))
 
 ;; This program is free software; you can redistribute it and/or modify
