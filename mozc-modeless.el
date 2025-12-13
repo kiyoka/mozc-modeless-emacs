@@ -82,8 +82,9 @@ Returns a cons cell (START . STRING) where START is the beginning
 position of the romaji string, or nil if no romaji is found.
 Leading indentation (spaces and tabs) at the beginning of the line
 are excluded from the conversion target.
-In markdown-mode, markdown syntax (list markers, headings) are also
-excluded from the conversion target."
+In markdown-mode, markdown syntax (list markers using markdown-regex-list,
+headings) are excluded. In text-mode and fundamental-mode, markdown syntax
+is also recognized using built-in regex patterns."
   (save-excursion
     (let* ((end (point))
            (line-start (line-beginning-position))
@@ -92,9 +93,11 @@ excluded from the conversion target."
       (goto-char line-start)
       (skip-chars-forward " \t")
       (setq search-start (point))
-      ;; In markdown-mode, skip markdown syntax at the beginning of the line
-      (when (and (derived-mode-p 'markdown-mode)
-                 (boundp 'markdown-regex-list))
+      ;; Skip markdown syntax in markdown-mode, text-mode, and fundamental-mode
+      (cond
+       ;; In markdown-mode, use markdown-regex-list if available
+       ((and (derived-mode-p 'markdown-mode)
+             (boundp 'markdown-regex-list))
         (save-excursion
           (goto-char search-start)
           ;; Check for list markers (-, *, +, 1., etc.)
@@ -104,6 +107,18 @@ excluded from the conversion target."
           (goto-char search-start)
           (when (looking-at "^\\(#+\\)[ \t]+")
             (setq search-start (max search-start (match-end 0))))))
+       ;; In text-mode or fundamental-mode, use our own regex
+       ((or (derived-mode-p 'text-mode)
+            (derived-mode-p 'fundamental-mode))
+        (save-excursion
+          (goto-char search-start)
+          ;; Check for list markers (-, *, +, 1., etc.)
+          (when (looking-at "\\([-*+]\\|[0-9]+\\.\\)[ \t]+")
+            (setq search-start (match-end 0)))
+          ;; Check for ATX headings (#, ##, etc.)
+          (goto-char search-start)
+          (when (looking-at "\\(#+\\)[ \t]+")
+            (setq search-start (match-end 0))))))
       ;; Skip backward over characters defined in mozc-modeless-skip-chars
       (goto-char end)
       (skip-chars-backward mozc-modeless-skip-chars search-start)
