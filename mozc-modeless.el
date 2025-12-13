@@ -146,12 +146,22 @@ is also recognized using built-in regex patterns."
 This function is bound to `mozc-modeless-convert-key' (default: C-j).
 When already in conversion mode, switch to the next candidate.
 If the string contains a slash (/), only the part after the last slash
-is sent to mozc, and the slash is deleted."
+is sent to mozc, and the slash is deleted.
+In lisp-interaction-mode, if the preceding character is ')', evaluate
+the expression instead of converting."
   (interactive)
-  (if mozc-modeless--active
-      ;; Already in conversion mode, send space to get next candidate
-      (setq unread-command-events (cons ?\s unread-command-events))
-    ;; Start conversion
+  (cond
+   ;; In lisp-interaction-mode, evaluate the expression if preceding char is ')'
+   ((and (derived-mode-p 'lisp-interaction-mode)
+         (eq (char-before) 41))
+    (call-interactively 'eval-print-last-sexp))
+
+   ;; Already in conversion mode, send space to get next candidate
+   (mozc-modeless--active
+    (setq unread-command-events (cons ?\s unread-command-events)))
+
+   ;; Start conversion
+   (t
     (let ((roman-data (mozc-modeless--get-preceding-roman)))
       (if (not roman-data)
           (message "No romaji found before cursor")
@@ -187,7 +197,7 @@ is sent to mozc, and the slash is deleted."
             (set-transient-map mozc-modeless--converting-map
                                (lambda () mozc-modeless--active))
             ;; Insert the romaji string through mozc, followed by space to convert
-            (mozc-modeless--insert-string (concat roman-string " "))))))))
+            (mozc-modeless--insert-string (concat roman-string " ")))))))))
 
 (defun mozc-modeless--insert-string (str)
   "Insert string STR through Mozc input method.

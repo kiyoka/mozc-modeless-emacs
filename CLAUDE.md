@@ -431,3 +431,54 @@ Ctrl-Jで変換を開始すると、行頭のインデント（空白やタブ�
 - mozcサーバーと直接プロトコル通信
 
 現時点では実装を見送り。
+
+### GitHub Issue #10 対応: Lisp Interactionモードでの式評価
+
+#### 問題の概要
+
+Lisp Interactionモード（*scratch*バッファなど）では、通常Ctrl-Jは`eval-print-last-sexp`（S式を評価して結果を表示）として使われます。しかし、mozc-modelessが有効な場合、常にローマ字変換を試みるため、Lisp式の評価ができなくなっていました。
+
+**要望:**
+- Lisp Interactionモードで、Ctrl-J押下時にカーソルの直前が「)」（閉じ括弧）の場合は、mozc変換ではなく、Lisp式を評価する動作としてほしい
+
+#### 実装内容 (2025-12-13)
+
+`mozc-modeless-convert`関数の冒頭で、lisp-interaction-modeかどうかと、カーソル直前の文字が「)」かどうかをチェックし、両方に該当する場合は元のCtrl-Jの動作を実行するようにしました。
+
+**主な変更点:**
+
+1. **lisp-interaction-modeのチェック**
+   - `(derived-mode-p 'lisp-interaction-mode)` でモードを判定
+   - `(eq (char-before) 41)` でカーソル直前の文字が「)」(ASCII 41)かどうかをチェック
+
+2. **条件分岐の追加**
+   - lisp-interaction-modeかつカーソル直前が「)」の場合: `eval-print-last-sexp`を実行
+   - それ以外の場合: 通常のmozc変換を実行
+
+3. **emacs-lisp-modeへの対応**
+   - 調査の結果、emacs-lisp-modeではCtrl-Jは`newline-and-indent`（改行とインデント）
+   - S式の評価には`C-x C-e`（`eval-last-sexp`）や`C-M-x`（`eval-defun`）を使用
+   - したがって、emacs-lisp-modeは対象外とし、lisp-interaction-modeのみに対応
+
+**修正ファイル:**
+- `mozc-modeless.el:152-198` - `mozc-modeless-convert`関数の修正
+- `mozc-modeless.el:150-151` - docstringの更新
+
+**動作例:**
+```
+Lisp Interactionモードでの動作:
+
+入力: "(+ 1 2)" + Ctrl-J
+結果: S式が評価されて "3" が表示される
+
+入力: "nihongo" + Ctrl-J
+結果: "日本語" に変換される（通常のmozc変換）
+```
+
+**技術詳細:**
+- 文字リテラル`?\)`ではなく、ASCII コード`41`を使用して括弧をチェック
+- `cond`を使用して3つの条件分岐を明確化：
+  1. lisp-interaction-modeで閉じ括弧の直後 → S式評価
+  2. 既に変換モード中 → 次候補へ
+  3. それ以外 → 通常の変換開始
+- ネストした`if`ではなく`cond`を使用することで、可読性を向上
