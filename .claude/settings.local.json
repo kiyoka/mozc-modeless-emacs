@@ -10,8 +10,7 @@
       "Bash(git remote:*)",
       "WebFetch(domain:github.com)",
       "WebSearch",
-      "Bash(git checkout:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nissue #10 の対応完了。\n\nLisp Interactionモードで、Ctrl-J押下時にカーソルの直前が「)」の場合、\nS式を評価する機能を追加。condを使用して3つの条件分岐を明確化。\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

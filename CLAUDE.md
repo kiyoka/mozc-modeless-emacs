@@ -482,3 +482,87 @@ Lisp Interactionモードでの動作:
   2. 既に変換モード中 → 次候補へ
   3. それ以外 → 通常の変換開始
 - ネストした`if`ではなく`cond`を使用することで、可読性を向上
+
+### GitHub Issue #13 対応: 変換中のCtrlキーバインド追加
+
+#### 問題の概要
+
+mozc変換中に、Emacsの標準的なカーソル移動キー（Ctrl+N、Ctrl+P、Ctrl+F、Ctrl+B）を使って候補選択や文節移動を行いたいという要望がありました。
+
+**要望内容:**
+1. **Ctrl+N** → 次の候補を選択
+2. **Ctrl+P** → 前の候補を選択
+3. **Ctrl+F** → 次の文節に移動
+4. **Ctrl+B** → 前の文節に移動
+
+#### 調査結果 (2026-01-03)
+
+**mozc.elのキーイベント処理の仕組み:**
+
+1. mozc-mode-mapは`[t]`（すべてのキー）を`mozc-handle-event`にバインド (mozc.el:174)
+2. `mozc-handle-event`はすべてのキーイベントをmozcサーバーに送信 (mozc.el:327-374)
+3. mozcサーバー側で対応しているキーは`consumed=true`を返し、対応していないキーは`consumed=false`を返す
+4. `consumed=false`のキーはEmacsのデフォルトキーバインドにフォールバック
+
+**現状:**
+- Ctrl+Nはmozcサーバー側でサポートされているが、特別な意味（確定動作）を持つため、矢印キーと異なる動作をする
+- Ctrl+P、Ctrl+F、Ctrl+Bはmozcサーバー側で未サポート
+
+#### 実装内容 (2026-01-03)
+
+mozc-modeless側で、変換中に有効な`mozc-modeless--converting-map`に4つのキーバインドを追加しました。
+
+**追加した関数:** (mozc-modeless.el:254-276)
+
+1. `mozc-modeless-previous-candidate` - Ctrl+P用
+   - 上矢印キー（`up`）を`unread-command-events`に送信
+
+2. `mozc-modeless-next-candidate` - Ctrl+N用
+   - 下矢印キー（`down`）を`unread-command-events`に送信
+   - mozcサーバー側のCtrl+Nの特別な意味を回避
+
+3. `mozc-modeless-next-segment` - Ctrl+F用
+   - 右矢印キー（`right`）を`unread-command-events`に送信
+
+4. `mozc-modeless-previous-segment` - Ctrl+B用
+   - 左矢印キー（`left`）を`unread-command-events`に送信
+
+**キーマップの更新:** (mozc-modeless.el:71-79)
+
+```elisp
+(defvar mozc-modeless--converting-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-g") 'mozc-modeless-cancel)
+    (define-key map (kbd "C-n") 'mozc-modeless-next-candidate)
+    (define-key map (kbd "C-p") 'mozc-modeless-previous-candidate)
+    (define-key map (kbd "C-f") 'mozc-modeless-next-segment)
+    (define-key map (kbd "C-b") 'mozc-modeless-previous-segment)
+    map)
+  "Keymap active only during conversion.")
+```
+
+**動作例:**
+```
+変換中の操作:
+
+入力: "konnnichiwa" + Ctrl-J
+変換開始: 「こんにちわ」
+
+Ctrl+N: 次の候補「今日は」（mozc-modeless側で下矢印を送信）
+Ctrl+P: 前の候補「こんにちわ」（mozc-modeless側で上矢印を送信）
+Ctrl+F: 次の文節に移動（mozc-modeless側で右矢印を送信）
+Ctrl+B: 前の文節に移動（mozc-modeless側で左矢印を送信）
+```
+
+**技術詳細:**
+- 矢印キーのシミュレーションには、シンボル（`'down`、`'up`、`'right`、`'left`）を`unread-command-events`に追加
+- これらのキーは`mozc-handle-event`を経由してmozcサーバーに渡される
+- mozcサーバーは矢印キーを適切に処理（候補選択、文節移動）
+- `mozc-modeless--converting-map`は`set-transient-map`により変換中のみ有効 (mozc-modeless.el:203-204)
+
+**Ctrl+Nの特別な扱い:**
+- mozcサーバー側のCtrl+Nは、確定動作など特別な意味を持つ
+- Ctrl+Pを押した後にCtrl+Nを押すと確定してしまう問題があった
+- mozc-modeless側でCtrl+Nを下矢印キーに変換することで、この問題を回避
+
+動作に問題ありませんでした。コミットログを考えてください。
