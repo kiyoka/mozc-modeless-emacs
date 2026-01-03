@@ -71,6 +71,10 @@ This is used to restore the text when conversion is cancelled.")
 (defvar mozc-modeless--converting-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-g") 'mozc-modeless-cancel)
+    (define-key map (kbd "C-n") 'mozc-modeless-next-candidate)
+    (define-key map (kbd "C-p") 'mozc-modeless-previous-candidate)
+    (define-key map (kbd "C-f") 'mozc-modeless-next-segment)
+    (define-key map (kbd "C-b") 'mozc-modeless-previous-segment)
     map)
   "Keymap active only during conversion.")
 
@@ -247,6 +251,30 @@ This is called from `post-command-hook'."
       (insert mozc-modeless--original-string))
     ;; Clean up state
     (mozc-modeless--reset-state)))
+
+(defun mozc-modeless-previous-candidate ()
+  "Select the previous candidate during conversion.
+This function simulates the up arrow key."
+  (interactive)
+  (setq unread-command-events (cons 'up unread-command-events)))
+
+(defun mozc-modeless-next-candidate ()
+  "Select the next candidate during conversion.
+This function simulates the down arrow key."
+  (interactive)
+  (setq unread-command-events (cons 'down unread-command-events)))
+
+(defun mozc-modeless-next-segment ()
+  "Move to the next segment during conversion.
+This function simulates the right arrow key."
+  (interactive)
+  (setq unread-command-events (cons 'right unread-command-events)))
+
+(defun mozc-modeless-previous-segment ()
+  "Move to the previous segment during conversion.
+This function simulates the left arrow key."
+  (interactive)
+  (setq unread-command-events (cons 'left unread-command-events)))
 
 (defun mozc-modeless-reset ()
   "Reset mozc-modeless state.
