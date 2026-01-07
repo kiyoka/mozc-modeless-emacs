@@ -20,8 +20,39 @@ Emacs用のモードレス日本語入力インターフェースです。
 
 ## インストール
 
+**注意**: Emacs 29.0以上が必要です。
+
+### 方法1: package-vc-install を使う（推奨）
+
+Emacs 29以降では、`package-vc-install`でGitHubから直接インストールできます。
+
+- init.elに追記してください
+
 ```elisp
-(add-to-list 'load-path "/path/to/mozc-modeless")
+;; M-x eval-expression で以下を実行（初回のみ）
+(package-vc-install "https://github.com/kiyoka/mozc-modeless.git")
+
+;; init.elに以下を追加
+(use-package mozc-modeless
+  :after (mozc markdown-mode)
+  :config
+  (global-mozc-modeless-mode 1))
+```
+
+### 方法2: 手動でインストール
+
+- 事前準備
+
+```bash
+mkdir -p ~/.emacs.d/site-lisp/
+cd ~/.emacs.d/site-lisp/
+git clone https://github.com/kiyoka/mozc-modeless.git
+```
+
+- init.elに追記してください
+
+```elisp
+(add-to-list 'load-path "~/.emacs.d/site-lisp/mozc-modeless")
 (require 'mozc-modeless)
 (global-mozc-modeless-mode 1)
 ```
