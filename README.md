@@ -26,7 +26,7 @@ Emacs用のモードレス日本語入力インターフェースです。
 
 Emacs 29以降では、`package-vc-install`でGitHubから直接インストールできます。
 
-- 事前に以下を*scratch*バッファで実行してinstallしてください
+- 事前に以下を`*scratch*`バッファで実行してinstallしてください
 
 ```elisp
 (package-vc-install
