@@ -26,15 +26,17 @@ Emacs用のモードレス日本語入力インターフェースです。
 
 Emacs 29以降では、`package-vc-install`でGitHubから直接インストールできます。
 
+- 事前に以下を*scratch*バッファで実行してinstallしてください
+
+```elisp
+(package-vc-install
+  '(mozc-modeless . (:url "https://github.com/kiyoka/mozc-modeless.git")))
+```
+
 - init.elに追記してください
 
 ```elisp
-;; M-x eval-expression で以下を実行（初回のみ）
-(package-vc-install "https://github.com/kiyoka/mozc-modeless.git")
-
-;; init.elに以下を追加
 (use-package mozc-modeless
-  :after (mozc markdown-mode)
   :config
   (global-mozc-modeless-mode 1))
 ```
