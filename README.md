@@ -30,7 +30,7 @@ Emacs 29以降では、`package-vc-install`でGitHubから直接インストー�
 
 ```elisp
 (package-vc-install
-  '(mozc-modeless . (:url "https://github.com/kiyoka/mozc-modeless.git")))
+  '(mozc-modeless . (:url "https://github.com/kiyoka/mozc-modeless-emacs.git")))
 ```
 
 - init.elに追記してください
@@ -48,13 +48,13 @@ Emacs 29以降では、`package-vc-install`でGitHubから直接インストー�
 ```bash
 mkdir -p ~/.emacs.d/site-lisp/
 cd ~/.emacs.d/site-lisp/
-git clone https://github.com/kiyoka/mozc-modeless.git
+git clone https://github.com/kiyoka/mozc-modeless-emacs.git
 ```
 
 - init.elに追記してください
 
 ```elisp
-(add-to-list 'load-path "~/.emacs.d/site-lisp/mozc-modeless")
+(add-to-list 'load-path "~/.emacs.d/site-lisp/mozc-modeless-emacs")
 (require 'mozc-modeless)
 (global-mozc-modeless-mode 1)
 ```
