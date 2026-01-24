@@ -6,7 +6,7 @@ Emacs用のモードレス日本語入力インターフェースです。
 > **より賢いモードレス日本語入力をお探しの方へ:**
 > LLMを使った高度な日本語入力を体験したい場合は、[Sumibi](https://github.com/kiyoka/Sumibi)をご検討ください。AIによる文脈を考慮した変換候補の提供など、より洗練された入力体験を実現しています。
 
-![demo_movie](https://github.com/user-attachments/assets/371714d6-369c-486e-903f-13aaa434f144)
+https://github.com/user-attachments/assets/371714d6-369c-486e-903f-13aaa434f144
 
 ## 特徴
 
